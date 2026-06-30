@@ -1,17 +1,32 @@
 # noinspection PyUnresolvedReferences
+import os
 import urllib.parse
+from datetime import datetime, timezone
+from pathlib import Path
 
+from behave_html_formatter.html import HTMLFormatter
 from eu.xfsc.bdd.core import environment
 # noinspection PyUnresolvedReferences
 from eu.xfsc.bdd.core.steps import *
 from eu.xfsc.bdd.core.server.keycloak import Token
-from pathlib import Path
 
 
 def before_all(context) -> None:
     environment.before_all(context)
 
     context.FileToken = Token(Path(__file__).parent / ".tmp")
+    _stamp_html_report(context)
+
+
+def _stamp_html_report(context) -> None:
+    # Appends the target base URL and run timestamp to the HTML report title so the
+    # report self-evidently proves which deployment instance was tested. Runs once
+    # globally (called from before_all) — not per scenario.
+    base_url = os.environ.get("CAT_FC_HOST", "unknown")
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    for formatter in context._runner.formatters:
+        if isinstance(formatter, HTMLFormatter):
+            formatter.set_title(f" — {base_url}  @  {timestamp}", append=True, style="font-size:0.6em;color:#555")
 
 
 def before_scenario(context, scenario) -> None:
