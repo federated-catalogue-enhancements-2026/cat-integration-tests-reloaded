@@ -677,6 +677,17 @@ def save_schema_id_from_last_response(context: ContextType) -> None:
     context.last_schema_id = schema_id
 
 
+@then('save schema id from last response as "{var_name}"')
+def save_schema_id_as_named(context: ContextType, var_name: str) -> None:
+    response_json = context.requests_response.json()
+    schema_id = response_json.get("id")
+    assert schema_id, f"Last response does not contain an 'id' field: {response_json}"
+    if not hasattr(context, "last_schema_ids"):
+        context.last_schema_ids = []
+    context.last_schema_ids.append(schema_id)
+    setattr(context, var_name, schema_id)
+
+
 @then('save asset id from last response as "{var_name}"')
 def save_asset_id_as_named(context: ContextType, var_name: str) -> None:
     response_json = context.requests_response.json()
@@ -702,6 +713,16 @@ def validate_saved_asset_against_schema(context: ContextType, schema_id: str) ->
     assert hasattr(context, "last_asset_id"), "No saved asset id"
     context.requests_response = context.fc_server.validate_asset(
         context.last_asset_id, schema_ids=[schema_id]
+    )
+
+
+@when('validate saved asset against saved schemas')
+def validate_saved_asset_against_saved_schemas(context: ContextType) -> None:
+    assert hasattr(context, "last_asset_id"), "No saved asset id"
+    assert hasattr(context, "last_schema_ids"), \
+        'No saved schema ids — use \'save schema id from last response as "var"\''
+    context.requests_response = context.fc_server.validate_asset(
+        context.last_asset_id, schema_ids=context.last_schema_ids
     )
 
 

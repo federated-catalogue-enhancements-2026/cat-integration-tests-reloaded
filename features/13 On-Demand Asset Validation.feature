@@ -46,6 +46,24 @@ Feature: On-Demand Asset Validation
       And response has a validation result id
       And uploaded schemas are cleaned up
 
+  @cfg.default
+  Scenario: Validate JSON-LD RDF asset against SHACL shape and JSON Schema together — both conform
+    # SRS 3.1.6 applicability: a JSON Schema is applicable to an RDF asset serialised in JSON-LD.
+    # This is SRS 5 validation request 1 — combined SHACL + JSON Schema validation of one asset.
+    # JSON-LD without LD-proof — only accepted when VC signature verification is off (default config).
+    Given schema from fixture "schemas/participant-requires-legalname.shacl.ttl" is uploaded as "text/turtle"
+    Then save schema id from last response as "shape_schema_id"
+    Given schema from fixture "schemas/participant-jsonld.schema.json" is uploaded as "application/schema+json"
+    Then save schema id from last response as "json_schema_id"
+    Given credential from fixture "loire/valid/participant.loire.jsonld" is not uploaded
+    When add credential from fixture "loire/valid/participant.loire.jsonld"
+    Then save asset id from last response
+    When validate saved asset against saved schemas
+    Then get http 200:Success code
+      And response conforms to schema
+      And response has a validation result id
+      And uploaded schemas are cleaned up
+
   Scenario: Validate RDF asset against SHACL — non-conforming, violations returned
     # Turtle fixture explicitly typed as gax-core:Participant but missing schema:legalName
     Given schema from fixture "schemas/participant-requires-legalname.shacl.ttl" is uploaded as "text/turtle"
