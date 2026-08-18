@@ -809,6 +809,14 @@ def response_has_validation_result_id(context: ContextType) -> None:
     context.last_validation_result_id = result_ids[0]
 
 
+@then('response has {expected:d} validation result ids')
+def response_has_n_validation_result_ids(context: ContextType, expected: int) -> None:
+    body = context.requests_response.json()
+    result_ids = body.get("validationResultIds")
+    assert result_ids and len(result_ids) == expected, \
+        f"Expected {expected} validationResultIds, got: {result_ids} in {body}"
+
+
 @when('get validation result by saved id')
 def get_validation_result_by_saved_id(context: ContextType) -> None:
     assert hasattr(context, "last_validation_result_id"), "No saved validation result id"

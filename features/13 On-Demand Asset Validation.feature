@@ -61,7 +61,7 @@ Feature: On-Demand Asset Validation
     When validate saved asset against saved schemas
     Then get http 200:Success code
       And response conforms to schema
-      And response has a validation result id
+      And response has 2 validation result ids
       And uploaded schemas are cleaned up
 
   Scenario: Validate RDF asset against SHACL — non-conforming, violations returned
