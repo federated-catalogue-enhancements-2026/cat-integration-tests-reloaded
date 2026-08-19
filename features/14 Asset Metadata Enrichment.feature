@@ -97,6 +97,24 @@ Feature: Asset Metadata Enrichment
      And query result does not contain saved asset id
     Then asset from fixture "valid/non-rdf/template.txt" is not uploaded
 
+  Scenario: Version-specific read of a non-RDF asset returns its own content
+    # Regression test for backlog story 072: GET /assets/{id}?version=N shares the same
+    # content-resolution code as the no-version read (feature file's first scenario), but was
+    # never exercised through the version-specific path. A non-RDF asset's historicized content
+    # column is null until an enrichment writes to it; before the fix, that null short-circuited
+    # the version-specific read to an empty body instead of falling back to the file store.
+    Given asset from fixture "valid/non-rdf/template.txt" is not uploaded
+    When add asset from fixture "valid/non-rdf/template.txt" with content-type "text/plain"
+    Then get http 201:Created code
+     And save asset id from last response
+     And save file size from last response
+    When get saved asset at version 1
+    Then get http 200:Success code
+     And response content-type is "text/plain"
+     And response file size matches saved file size
+     And response rawContent matches fixture "valid/non-rdf/template.txt"
+    Then asset from fixture "valid/non-rdf/template.txt" is not uploaded
+
   Scenario: Enriching a human-readable asset is rejected with HTTP 422
     # Human-readable representations are managed via /assets/{id}/human-readable
     # and must not be enriched.
