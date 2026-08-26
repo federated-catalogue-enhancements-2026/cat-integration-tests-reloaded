@@ -64,6 +64,27 @@ Feature: On-Demand Asset Validation
       And response has 2 validation result ids
       And uploaded schemas are cleaned up
 
+  @cfg.default
+  Scenario: Validate JSON-LD RDF asset against SHACL shape and JSON Schema together — SHACL half non-conforming
+    # Negative twin of the scenario above: same two schemas, but this asset is explicitly typed
+    # gax-core:Participant (matching the SHACL shape's target class under the Tagus namespace)
+    # and lacks schema:legalName, so the SHACL leg genuinely fails instead of vacuously
+    # conforming against zero matched focus nodes.
+    Given schema from fixture "schemas/participant-requires-legalname.shacl.ttl" is uploaded as "text/turtle"
+    Then save schema id from last response as "shape_schema_id"
+    Given schema from fixture "schemas/participant-jsonld.schema.json" is uploaded as "application/schema+json"
+    Then save schema id from last response as "json_schema_id"
+    Given asset from fixture "invalid/rdf/participant-missing-legalname.jsonld" is not uploaded
+    When add asset from fixture "invalid/rdf/participant-missing-legalname.jsonld" with content-type "application/ld+json"
+    Then save asset id from last response
+    When validate saved asset against saved schemas
+    Then get http 200:Success code
+      And response does not conform to schema
+      And response has at least 1 violation
+      And response report contains raw SHACL report
+      And response has 2 validation result ids
+      And uploaded schemas are cleaned up
+
   Scenario: Validate RDF asset against SHACL — non-conforming, violations returned
     # Turtle fixture explicitly typed as gax-core:Participant but missing schema:legalName
     Given schema from fixture "schemas/participant-requires-legalname.shacl.ttl" is uploaded as "text/turtle"
