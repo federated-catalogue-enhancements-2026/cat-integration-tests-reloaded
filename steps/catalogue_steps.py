@@ -582,7 +582,7 @@ def response_file_size_matches_saved(context: ContextType) -> None:
 
 @then('response rawContent matches fixture "{fixture_path}"')
 def response_raw_content_matches_fixture(context: ContextType, fixture_path: str) -> None:
-    expected = (FIXTURES_DIR / fixture_path).read_text()
+    expected = (FIXTURES_DIR / fixture_path).read_bytes().decode("utf-8")
     body = context.requests_response.json()
     actual = body.get("rawContent")
     assert actual == expected, \
