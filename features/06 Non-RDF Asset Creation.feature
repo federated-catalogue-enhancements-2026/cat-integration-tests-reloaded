@@ -54,3 +54,20 @@ Feature: Non-RDF Asset Creation
     When add asset from fixture "valid/non-rdf/sample.pdf" as raw binary
     Then get http 201:Created code
       And response has file size greater than 0
+
+  @req.CAT-FR-AC-01
+  Scenario: User with only ASSET_CREATE can create an asset but cannot delete it
+    # fc-asset-creator-test has only ASSET_CREATE — proves a fine-grained role
+    # grants exactly its own operation, not others (CAT-FR-AC-01 role isolation).
+    Given asset from fixture "valid/non-rdf/template.txt" is not uploaded
+    Given Keycloak token for user "fc-asset-creator-test" with password "CHANGE_ME_dev_only1"
+    When add asset from fixture "valid/non-rdf/template.txt" with content-type "text/plain"
+    Then get http 201:Created code
+      And save asset id from last response
+    When delete saved asset
+    Then get http 403:Forbidden code
+    # Cleanup: the restricted user cannot delete it, so re-authenticate as the
+    # default admin user to remove the asset and avoid leaking test data.
+    Given Keycloak token for user "fc-ca-test" with password "CHANGE_ME_dev_only1"
+    When delete saved asset
+    Then get http 200:Success code
