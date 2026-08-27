@@ -203,6 +203,14 @@ def verify_all_provenance_credentials_for_saved_asset(context: ContextType) -> N
     context.requests_response = context.fc_server.verify_all_provenance_credentials(context.last_asset_id)
 
 
+@when('verify all provenance credentials for saved asset at version {version:d}')
+def verify_all_provenance_credentials_for_saved_asset_at_version(context: ContextType, version: int) -> None:
+    assert hasattr(context, "last_asset_id"), "No saved asset id — call 'save asset id from last response' first"
+    context.requests_response = context.fc_server.verify_all_provenance_credentials(
+        context.last_asset_id, version=version
+    )
+
+
 @then('save asset version count and latest version ordinal')
 def save_asset_version_count_and_latest_version_ordinal(context: ContextType) -> None:
     body = context.requests_response.json()
@@ -278,6 +286,26 @@ def all_provenance_verification_results_are_valid(context: ContextType) -> None:
     body = context.requests_response.json()
     is_valid = body.get("isValid")
     assert is_valid is True, f"Expected aggregated isValid=true, got: {body}"
+
+
+@then('all provenance verification results are invalid with reason "{reason}"')
+def all_provenance_verification_results_are_invalid_with_reason(
+    context: ContextType, reason: str
+) -> None:
+    body = context.requests_response.json()
+    is_valid = body.get("isValid")
+    errors = body.get("errors") or []
+    assert is_valid is False, f"Expected aggregated isValid=false, got: {body}"
+    assert reason in errors, f"Expected reason '{reason}' in errors, got: {errors}"
+
+
+@then('all provenance verification results have no verification timestamp')
+def all_provenance_verification_results_have_no_verification_timestamp(
+    context: ContextType
+) -> None:
+    body = context.requests_response.json()
+    assert body.get("verificationTimestamp") is None, \
+        f"Expected verificationTimestamp to be null (nothing was verified), got: {body}"
 
 
 @then('projected graph contains predicate "{predicate}" for saved asset at version {version:d}')

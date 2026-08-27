@@ -176,6 +176,34 @@ Feature: Asset Provenance and Versioning
      And query result contains "did:key:z6MkjRagNiMu91DduvCvgEsqLZDVzrJzFrwahc4tXLt9DoHd"
      And credential from fixture "valid/default-only/gaiax-participant-correct-type.vp.jsonld" is not uploaded
 
+  Scenario: Verifying an asset with no provenance credentials reports failure without a timestamp
+    # CAT-FR-LM-02 vacuous-pass fix: zero credentials must not verify as isValid=true.
+    When add credential from fixture "valid/default-only/gaiax-participant-correct-type.vp.jsonld"
+    Then get http 201:Created code
+     And save asset id from last response
+    When verify all provenance credentials for saved asset
+    Then get http 200:Success code
+     And all provenance verification results are invalid with reason "No provenance credentials present for this asset"
+     And all provenance verification results have no verification timestamp
+     And credential from fixture "valid/default-only/gaiax-participant-correct-type.vp.jsonld" is not uploaded
+
+  Scenario: A version without provenance credentials is distinguishable from a sibling version with valid ones
+    When add credential from fixture "valid/default-only/gaiax-participant-correct-type.vp.jsonld"
+    Then get http 201:Created code
+     And save asset id from last response
+    When update saved asset with fixture "valid/version-control/gaiax-participant-v2.vp.jsonld"
+    Then get http 200:Success code
+    When add provenance credential for saved asset at version 1 with predicate "prov:wasGeneratedBy"
+    Then get http 201:Created code
+    When verify all provenance credentials for saved asset at version 1
+    Then get http 200:Success code
+     And all provenance verification results are valid
+    When verify all provenance credentials for saved asset at version 2
+    Then get http 200:Success code
+     And all provenance verification results are invalid with reason "No provenance credentials present for this asset"
+     And all provenance verification results have no verification timestamp
+     And credential from fixture "valid/default-only/gaiax-participant-correct-type.vp.jsonld" is not uploaded
+
   Scenario: Attaching a human-readable companion does not advance the asset version counter
     When add credential from fixture "valid/default-only/gaiax-participant-correct-type.vp.jsonld"
     Then get http 201:Created code
