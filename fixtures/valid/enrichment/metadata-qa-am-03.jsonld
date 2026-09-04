@@ -1,0 +1,7 @@
+{
+  "@context": {
+    "ex": "http://example.org/"
+  },
+  "@id": "{asset_id}",
+  "ex:tag": "qa-am-03-constellation-fixture-nf6"
+}
