@@ -270,6 +270,11 @@ python3 scripts/generate-jwt-fixture.py \
 See `scripts/generate-jwt-fixture.py --help` for all options (including `--iss` to override the protected header's
 issuer, which otherwise defaults to the payload's own `iss` claim).
 
+`make sign-jwt-fixtures KEY=keys/jwt-signing.pem` re-signs everything above **and** the `vc20/invalid/` negative
+fixtures in one pass — including `bad-signature.vc2.jwt`, whose deliberately-broken signature is produced by
+`scripts/tamper-signature.py` after a normal sign. It does not touch `fixtures/mock-attestation.jwt` or
+`fixtures/loire/valid/participant.vc2.jwt` — see [Fixture directories](#fixture-directories) below.
+
 ### Fixture directories
 
 | Directory | Purpose |
