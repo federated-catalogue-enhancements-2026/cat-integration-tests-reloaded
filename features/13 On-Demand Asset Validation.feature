@@ -177,6 +177,37 @@ Feature: On-Demand Asset Validation
       And response has a validation result id
       And uploaded schemas are cleaned up
 
+  Scenario: Validate RDF/XML asset against XML Schema via explicit schemaId — conforming
+    # Symmetry case for SRS 3.1.6: an explicit schemaId makes an XML Schema applicable to an
+    # RDF asset serialised in RDF/XML (validateAgainstAllSchemas above never takes this path —
+    # only an explicit schemaId does). This XSD requires at least two top-level entries; it is
+    # a plain XML structural constraint on the raw RDF/XML bytes, unrelated to SHACL.
+    Given schema from fixture "schemas/participant-list.xsd" is uploaded as "application/xml"
+    Then save schema id from last response
+    Given asset from fixture "valid/rdf/participant-list.rdf" is not uploaded
+    When add asset from fixture "valid/rdf/participant-list.rdf" with content-type "application/rdf+xml"
+    Then save asset id from last response
+    When validate saved asset against schema by saved id
+    Then get http 200:Success code
+      And response conforms to schema
+      And response has a validation result id
+      And uploaded schemas are cleaned up
+
+  Scenario: Validate RDF/XML asset against XML Schema via explicit schemaId — non-conforming
+    # Same schemaId path, same XSD; this asset has only one top-level entry where the schema
+    # requires two — an XML Schema structural violation, not a SHACL constraint violation.
+    Given schema from fixture "schemas/participant-list.xsd" is uploaded as "application/xml"
+    Then save schema id from last response
+    Given asset from fixture "invalid/rdf/participant-list-incomplete.rdf" is not uploaded
+    When add asset from fixture "invalid/rdf/participant-list-incomplete.rdf" with content-type "application/rdf+xml"
+    Then save asset id from last response
+    When validate saved asset against schema by saved id
+    Then get http 200:Success code
+      And response does not conform to schema
+      And response has at least 1 violation
+      And response has a validation result id
+      And uploaded schemas are cleaned up
+
   Scenario: Validation result is retrievable by ID after validation
     Given schema from fixture "schemas/participant-requires-legalname.shacl.ttl" is uploaded as "text/turtle"
       And credential from fixture "loire/valid/participant.loire.signed.jwt" is not uploaded

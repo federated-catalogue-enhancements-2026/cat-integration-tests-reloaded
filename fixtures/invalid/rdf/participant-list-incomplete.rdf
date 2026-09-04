@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:gax-core="https://w3id.org/gaia-x/core#"
+         xmlns:schema="http://schema.org/">
+  <gax-core:Participant rdf:about="https://example.com/test-participant-list-incomplete">
+    <schema:legalName>ACME GmbH</schema:legalName>
+  </gax-core:Participant>
+</rdf:RDF>
