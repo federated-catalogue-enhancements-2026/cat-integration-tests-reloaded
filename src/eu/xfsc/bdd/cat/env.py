@@ -18,6 +18,13 @@ KEYCLOAK_CLIENT_SECRET = os.getenv(PREFIX + "_KEYCLOAK_CLIENT_SECRET") or ""
 KEYCLOAK_SCOPE = os.getenv(PREFIX + "_KEYCLOAK_SCOPE") or ""
 # :end: Keycloak
 
+# :start: Keycloak Admin API (ephemeral RBAC test-user provisioning, see
+# components/keycloak_admin.py). Defaults match the dev-realm bootstrap admin
+# (federated-catalogue/docker/dev.env: KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD).
+KEYCLOAK_ADMIN_USER = os.getenv(PREFIX + "_KEYCLOAK_ADMIN_USER") or "admin"
+KEYCLOAK_ADMIN_PASSWORD = os.getenv(PREFIX + "_KEYCLOAK_ADMIN_PASSWORD") or "admin"
+# :end: Keycloak Admin API
+
 # :start: Test User
 TEST_USER = os.getenv(PREFIX + "_TEST_USER") or ""
 TEST_PASSWORD = os.getenv(PREFIX + "_TEST_PASSWORD") or ""

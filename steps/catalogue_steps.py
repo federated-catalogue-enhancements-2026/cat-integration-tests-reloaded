@@ -153,6 +153,12 @@ def revoke_asset(context: ContextType, asset_hash: str) -> None:
     context.requests_response = context.fc_server.revoke_asset(asset_hash)
 
 
+@when('revoke saved asset')
+def revoke_saved_asset(context: ContextType) -> None:
+    assert hasattr(context, "last_asset_hash"), "No saved asset hash — call 'save asset id from last response' first"
+    context.requests_response = context.fc_server.revoke_asset(context.last_asset_hash)
+
+
 # -- Verification --
 
 @when("verify credential")
