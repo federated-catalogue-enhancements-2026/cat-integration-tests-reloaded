@@ -150,4 +150,13 @@ sign-jwt-fixtures:
 	$(JWT_SIGNER) $(JWT_KEY_ARG) --payload fixtures/loire/valid/participant-vp.loire.jsonld \
 		--embed-vc fixtures/loire/valid/participant.loire.jsonld \
 		--wrap-as evp --out fixtures/enveloped/valid/participant.evp.jsonld
+	@echo "Signing vc20/invalid negative fixtures..."
+	$(JWT_SIGNER) $(JWT_KEY_ARG) --payload fixtures/vc20/invalid/participant-expired.vc2.jwt.jsonld \
+		--out fixtures/vc20/invalid/participant-expired.vc2.jwt
+	$(JWT_SIGNER) $(JWT_KEY_ARG) --payload fixtures/vc20/invalid/vp-iss-holder-mismatch.jwt.jsonld \
+		--embed-vc fixtures/loire/valid/participant.vc2.jsonld \
+		--out fixtures/vc20/invalid/vp-iss-holder-mismatch.jwt
 	@echo "Done."
+	@echo "NOTE: fixtures/mock-attestation.jwt and fixtures/loire/valid/participant.vc2.jwt"
+	@echo "      are NOT signed by this target — they are alg:none / dummy-signature stubs"
+	@echo "      used for signature-skip scenarios, not real Ed25519 fixtures."
