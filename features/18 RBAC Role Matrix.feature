@@ -7,11 +7,11 @@ Feature: RBAC role matrix for asset endpoints
   So that role enforcement is verified end-to-end against the shipped Keycloak realm, not
   only at unit-test level
 
-  # All seven scenarios assert all four operations (create/read/update/delete); none are @wip. Six of
+  # All seven scenarios assert all four operations (create/read/update/delete); none are @wip. All
   # seven provision ephemeral users at runtime via the Keycloak Admin REST API wrapper
-  # (src/eu/xfsc/bdd/cat/components/keycloak_admin.py, steps/keycloak_admin.py), since the shipped
-  # dev realm only provides a fixed user for the zero-roles row (fc-restricted-test). Every
-  # provisioned user shares one participantId, so any two belong to the same participant.
+  # (src/eu/xfsc/bdd/cat/components/keycloak_admin.py, steps/keycloak_admin.py), including the
+  # zero-roles row, whose provisioned user has participantId set but is assigned no client roles.
+  # Every provisioned user shares one participantId, so any two belong to the same participant.
   #
   # Delete/revoke enforce participant ownership: the caller's participant must match the asset's
   # issuer, unless the caller is admin. An asset created by fc-ca-test has a null issuer and can
@@ -30,16 +30,15 @@ Feature: RBAC role matrix for asset endpoints
 
   @req.CAT-FR-AC-01
   Scenario: User with zero asset roles gets 403 on every asset operation
-    # fc-restricted-test holds SCHEMA_READ only — none of the four ASSET_* roles — proving the
-    # "zero roles" row of the matrix: every asset operation is denied, not just some of them.
-    # Note: fc-restricted-test also has no participantId attribute, so these 403s cannot by
-    # themselves distinguish "denied for missing role" from "denied for missing participant" —
-    # both are expected to 403 here regardless, so the assertion holds either way.
+    # The provisioned user has participantId set (like the other six rows) but is assigned no
+    # client roles — none of the four ASSET_* roles, or any other. That isolates the variable
+    # this row exists to test: every asset operation is denied because of the missing role, not
+    # because of a missing participant, proving the "zero roles" row of the matrix unambiguously.
     Given asset from fixture "valid/non-rdf/template.txt" is not uploaded
     When add asset from fixture "valid/non-rdf/template.txt" with content-type "text/plain"
     Then get http 201:Created code
       And save asset id from last response
-    Given Keycloak token for user "fc-restricted-test" with password "CHANGE_ME_dev_only1"
+    Given Keycloak token for a provisioned user with no roles
     When add asset from fixture "valid/non-rdf/template.txt" with content-type "text/plain"
     Then get http 403:Forbidden code
     When get saved asset

@@ -51,10 +51,26 @@ def token_for_provisioned_user_with_roles(context: ContextType, role_names: str)
     composite roles (e.g. "asset-creator", "asset-manager") both work, since
     Keycloak's role-mapping endpoint accepts either — and switch the shared
     Keycloak client to a password-grant token for that user."""
-    if not hasattr(context, "keycloak_admin"):
-        context.keycloak_admin = KeycloakAdmin()
     roles = [name.strip() for name in role_names.split(",") if name.strip()]
     assert roles, f'No role names parsed from "{role_names}"'
+    _provision_user_and_fetch_token(context, roles)
+
+
+@given('Keycloak token for a provisioned user with no roles')
+def token_for_provisioned_user_with_no_roles(context: ContextType) -> None:
+    """Same ephemeral-user provisioning as token_for_provisioned_user_with_roles,
+    but skips client-role assignment entirely — used by the RBAC role matrix's
+    zero-roles row to isolate "no role" from "no participantId" as the cause of
+    the expected 403s (unlike fc-restricted-test, this user has participantId set)."""
+    _provision_user_and_fetch_token(context, [])
+
+
+def _provision_user_and_fetch_token(context: ContextType, roles: list[str]) -> None:
+    """Shared provisioning logic for the two steps above: create an ephemeral
+    realm user, optionally assign it client roles, then switch the shared
+    Keycloak client to a password-grant token for that user."""
+    if not hasattr(context, "keycloak_admin"):
+        context.keycloak_admin = KeycloakAdmin()
     username = f"{PROVISIONED_USER_PREFIX}{uuid.uuid4().hex[:12]}"
 
     create_response = context.keycloak_admin.create_user(
@@ -69,11 +85,12 @@ def token_for_provisioned_user_with_roles(context: ContextType, role_names: str)
     assert user_id, f"Keycloak admin user creation for '{username}' returned no Location header"
     _track_provisioned_user(context, user_id)
 
-    assign_response = context.keycloak_admin.assign_client_roles(user_id, roles)
-    assert assign_response.status_code == NO_CONTENT_STATUS_CODE, (
-        f"Could not assign roles {roles} to provisioned user '{username}' ({user_id}): "
-        f"{assign_response.status_code} {assign_response.text}"
-    )
+    if roles:
+        assign_response = context.keycloak_admin.assign_client_roles(user_id, roles)
+        assert assign_response.status_code == NO_CONTENT_STATUS_CODE, (
+            f"Could not assign roles {roles} to provisioned user '{username}' ({user_id}): "
+            f"{assign_response.status_code} {assign_response.text}"
+        )
 
     context.keycloak.username = username
     context.keycloak.password = PROVISIONED_USER_PASSWORD
