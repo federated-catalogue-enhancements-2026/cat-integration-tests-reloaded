@@ -34,7 +34,11 @@ Feature: RBAC role matrix for asset endpoints
     # client roles — none of the four ASSET_* roles, or any other. That isolates the variable
     # this row exists to test: every asset operation is denied because of the missing role, not
     # because of a missing participant, proving the "zero roles" row of the matrix unambiguously.
+    # Base asset is seeded by a second, same-participantId ASSET_CREATE user — not fc-ca-test —
+    # so the delete cell's 403 is attributable to the missing role, not to the null-issuer
+    # ownership gate on delete/revoke described above.
     Given asset from fixture "valid/non-rdf/template.txt" is not uploaded
+    Given Keycloak token for a provisioned user with roles "ASSET_CREATE"
     When add asset from fixture "valid/non-rdf/template.txt" with content-type "text/plain"
     Then get http 201:Created code
       And save asset id from last response
@@ -74,7 +78,12 @@ Feature: RBAC role matrix for asset endpoints
 
   @req.CAT-FR-AC-01
   Scenario: User with only ASSET_READ can read an asset but cannot create, update or delete
+    # Base asset seeded by a second, same-participantId ASSET_CREATE user — see the
+    # participant-scoping finding above; an fc-ca-test-issued asset (null issuer) cannot be
+    # revoked/deleted by any non-admin caller regardless of role, which would make the
+    # revoke/delete cells below ambiguous.
     Given asset from fixture "valid/non-rdf/template.txt" is not uploaded
+    Given Keycloak token for a provisioned user with roles "ASSET_CREATE"
     When add asset from fixture "valid/non-rdf/template.txt" with content-type "text/plain"
     Then get http 201:Created code
       And save asset id from last response

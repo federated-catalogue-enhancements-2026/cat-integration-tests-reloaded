@@ -18,7 +18,6 @@ from eu.xfsc.bdd.cat.components.keycloak_admin import KeycloakAdmin
 from eu.xfsc.bdd.core.server.keycloak import Token
 
 PROVISIONED_USER_PREFIX = "cit-rbac-"
-PROVISIONED_USER_PASSWORD = "CHANGE_ME_dev_only1"
 # Mirrors fc-asset-creator-test's own participantId (keycloak/realms/dev/fc-realm.json) — a
 # realm user with no participantId 403s on checkParticipantAccess regardless of role, see
 # GitHub issue eclipse-xfsc/federated-catalogue#155 and components/keycloak_admin.py.
@@ -72,9 +71,13 @@ def _provision_user_and_fetch_token(context: ContextType, roles: list[str]) -> N
     if not hasattr(context, "keycloak_admin"):
         context.keycloak_admin = KeycloakAdmin()
     username = f"{PROVISIONED_USER_PREFIX}{uuid.uuid4().hex[:12]}"
+    # Per-user random password, not a fixed constant: after_scenario's cleanup swallows
+    # delete failures, so a failed teardown against a shared realm must not leave a live
+    # account with a known, reusable password.
+    password = uuid.uuid4().hex
 
     create_response = context.keycloak_admin.create_user(
-        username, PROVISIONED_USER_PASSWORD, PROVISIONED_USER_PARTICIPANT_ID,
+        username, password, PROVISIONED_USER_PARTICIPANT_ID,
     )
     assert create_response.status_code == CREATED_STATUS_CODE, (
         f"Keycloak admin user creation for '{username}' failed: "
@@ -93,5 +96,5 @@ def _provision_user_and_fetch_token(context: ContextType, roles: list[str]) -> N
         )
 
     context.keycloak.username = username
-    context.keycloak.password = PROVISIONED_USER_PASSWORD
+    context.keycloak.password = password
     context.keycloak.last_token = context.keycloak.fetch_token()
