@@ -230,6 +230,8 @@ Scenarios without `@cfg.*` tags are config-agnostic and run in every variant.
 
 The FC server verifies JWT signatures on uploaded credentials by resolving the DID in the JWT `kid` header, fetching the public key from the DID document, and verifying the signature. Linked Data proof verification was removed with the Tagus-era cleanup (CAT-TECH-01) — only JWT and Enveloped Credential formats are accepted.
 
+The JWS **protected header** also carries an `iss` param mirroring the payload's own `iss` claim (in addition to `kid`/`typ`/`cty`). **The FC server does not read this header param** — `LoireJwtParser` only inspects `typ`/`cty`, and signature verification and issuer resolution still take the issuer from the payload `iss` claim, not from this header.
+
 Test fixtures use **`did:web`** — the same DID method that real Gaia-X participants use. The DID resolves to a DID document hosted by the docker-compose `did-server` service, which also serves the X.509 certificate chain and mocks the trust anchor registry. See [ADR-002](docs/adr/002-did-web-over-did-jwk.md) for the rationale behind this choice.
 
 ### Pre-signed fixtures (committed to repo)
@@ -265,14 +267,20 @@ python3 scripts/generate-jwt-fixture.py \
     --key keys/jwt-signing.pem
 ```
 
-See `scripts/generate-jwt-fixture.py --help` for all options.
+See `scripts/generate-jwt-fixture.py --help` for all options (including `--iss` to override the protected header's
+issuer, which otherwise defaults to the payload's own `iss` claim).
+
+`make sign-jwt-fixtures KEY=keys/jwt-signing.pem` re-signs everything above **and** the `vc20/invalid/` negative
+fixtures in one pass — including `bad-signature.vc2.jwt`, whose deliberately-broken signature is produced by
+`scripts/tamper-signature.py` after a normal sign. It does not touch `fixtures/mock-attestation.jwt` or
+`fixtures/loire/valid/participant.vc2.jwt` — see [Fixture directories](#fixture-directories) below.
 
 ### Fixture directories
 
 | Directory | Purpose |
 |-----------|---------|
 | `valid/` | VC 2.0 JSON-LD (unsigned) — for skip-signature and SHACL tests |
-| `loire/valid/` | Loire JWT fixtures (signed Ed25519/EdDSA) — for signature-verification tests |
+| `loire/valid/` | Loire JWT fixtures (signed Ed25519/EdDSA) — for signature-verification tests. `participant.vc2.jwt` is the one exception: a dummy-signature stub for the skip-signature scenario, not re-signed by `make sign-jwt-fixtures` |
 | `enveloped/valid/` | EnvelopedVerifiableCredential/Presentation wrappers |
 | `vc20/invalid/` | VC 2.0 negative tests (bad signature, expired, mismatched issuer) |
 | `invalid/` | Structurally broken payloads (missing fields) |
