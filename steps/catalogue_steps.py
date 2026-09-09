@@ -580,6 +580,25 @@ def response_file_size_matches_saved(context: ContextType) -> None:
         f"Expected fileSize {context.last_file_size}, got {actual}"
 
 
+@then('response assetHash matches saved asset hash')
+def response_asset_hash_matches_saved(context: ContextType) -> None:
+    assert getattr(context, "last_asset_hash", None), \
+        "No saved asset hash — call 'save asset id from last response' first, or last response had no assetHash"
+    body = context.requests_response.json()
+    actual = body.get("assetHash")
+    assert actual == context.last_asset_hash, \
+        f"Expected assetHash '{context.last_asset_hash}', got '{actual}' in {body}"
+
+
+@then('response rawContent matches fixture "{fixture_path}"')
+def response_raw_content_matches_fixture(context: ContextType, fixture_path: str) -> None:
+    expected = (FIXTURES_DIR / fixture_path).read_bytes().decode("utf-8")
+    body = context.requests_response.json()
+    actual = body.get("rawContent")
+    assert actual == expected, \
+        f"Expected rawContent to match fixture '{fixture_path}', got: {actual!r}"
+
+
 @then('response triplesAdded is {expected:d}')
 def response_triples_added_is(context: ContextType, expected: int) -> None:
     body = context.requests_response.json()
@@ -646,6 +665,58 @@ def response_has_file_size_greater_than(context: ContextType, minimum: int) -> N
     assert file_size is not None, f"Response missing fileSize field: {body}"
     assert file_size > minimum, \
         f"Expected fileSize > {minimum}, got {file_size}"
+
+
+# AM-03: list-path ("meta" of a readAssets item, see components.schemas.AssetResult
+# in openapi/fc_openapi.yaml) carries the same Asset fields as the single-item read.
+@when('list assets filtered by saved asset id')
+def list_assets_filtered_by_saved_asset_id(context: ContextType) -> None:
+    assert hasattr(context, "last_asset_id"), "No saved asset id — call 'save asset id from last response' first"
+    context.requests_response = context.fc_server.get_assets(params={"ids": context.last_asset_id})
+
+
+def _listed_asset_meta(context: ContextType) -> dict:
+    assert hasattr(context, "last_asset_id"), "No saved asset id — call 'save asset id from last response' first"
+    body = context.requests_response.json()
+    items = body.get("items", [])
+    assert items, f"Expected at least one item filtered by saved asset id, got: {body}"
+    matches = [item for item in items if item.get("meta", {}).get("id") == context.last_asset_id]
+    assert matches, f"Expected an item with meta.id '{context.last_asset_id}' in items, got: {items}"
+    return matches[0]["meta"]
+
+
+def _listed_asset_meta_mismatches(context: ContextType, expected_content_type: str) -> list[str]:
+    """Checks all three fields and returns every mismatch, instead of failing on the first one —
+    a single combined assertion so a partial defect (e.g. one field dropped, others correct) is
+    fully visible in one run rather than masked by behave stopping at the first failing step."""
+    meta = _listed_asset_meta(context)
+    mismatches = []
+    actual_content_type = meta.get("contentType")
+    if actual_content_type != expected_content_type:
+        mismatches.append(
+            f"contentType: expected '{expected_content_type}', got '{actual_content_type}'")
+    if not hasattr(context, "last_file_size"):
+        mismatches.append("fileSize: no saved file size to compare against (call "
+                           "'save file size from last response' first)")
+    else:
+        actual_file_size = meta.get("fileSize")
+        if actual_file_size != context.last_file_size:
+            mismatches.append(
+                f"fileSize: expected {context.last_file_size}, got {actual_file_size}")
+    saved_hash = getattr(context, "last_asset_hash", None)
+    if not saved_hash:
+        mismatches.append("assetHash: no saved asset hash to compare against (last response had none)")
+    else:
+        actual_hash = meta.get("assetHash")
+        if actual_hash != saved_hash:
+            mismatches.append(f"assetHash: expected '{saved_hash}', got '{actual_hash}'")
+    return mismatches
+
+
+@then('listed asset meta contentType is "{expected_type}", file size and assetHash match saved values')
+def listed_asset_meta_all_match_saved(context: ContextType, expected_type: str) -> None:
+    mismatches = _listed_asset_meta_mismatches(context, expected_type)
+    assert not mismatches, "Listed asset meta mismatch(es): " + "; ".join(mismatches)
 
 
 @when("request list of schemas")
