@@ -1,3 +1,12 @@
+import sys
+from pathlib import Path
+
+# Worktree-local src/ must win over whatever path a shared, path-fixed editable install
+# (eu-xfsc-bdd-cat, e.g. from a different worktree of this repo) happens to point at —
+# otherwise a module added only in this worktree (src/eu/xfsc/bdd/cat/components/keycloak_admin.py)
+# is not importable. Must run before any eu.xfsc import below.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
 # noinspection PyUnresolvedReferences
 import urllib.parse
 
@@ -5,7 +14,6 @@ from eu.xfsc.bdd.core import environment
 # noinspection PyUnresolvedReferences
 from eu.xfsc.bdd.core.steps import *
 from eu.xfsc.bdd.core.server.keycloak import Token
-from pathlib import Path
 
 
 def before_all(context) -> None:
@@ -105,5 +113,22 @@ def after_scenario(context, scenario) -> None:
             pass
     try:
         context.overridden_bundles = []
+    except AttributeError:
+        pass
+
+    # Delete any ephemeral Keycloak users provisioned via steps/keycloak_admin.py for the
+    # CAT-FR-AC-01 RBAC role-matrix scenarios — same rationale as the cleanups above: a
+    # mid-scenario failure must not leave a test user behind in the realm.
+    try:
+        provisioned_keycloak_user_ids = list(context.provisioned_keycloak_user_ids)
+    except AttributeError:
+        provisioned_keycloak_user_ids = []
+    for user_id in provisioned_keycloak_user_ids:
+        try:
+            context.keycloak_admin.delete_user(user_id)
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        context.provisioned_keycloak_user_ids = []
     except AttributeError:
         pass

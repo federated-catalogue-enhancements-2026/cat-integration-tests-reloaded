@@ -57,6 +57,11 @@ case ${CAT_ENV} in
     export CAT_KEYCLOAK_SCOPE="openid"
     export CAT_TEST_USER="fc-ca-test"
     export CAT_TEST_PASSWORD="CHANGE_ME_dev_only1"
+    # Keycloak Admin REST API — used only by the CAT-FR-AC-01 RBAC role-matrix scenarios
+    # (features/18 RBAC Role Matrix.feature) to provision/delete ephemeral test users at
+    # runtime. Matches federated-catalogue/docker/dev.env's KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD.
+    export CAT_KEYCLOAK_ADMIN_USER="admin"
+    export CAT_KEYCLOAK_ADMIN_PASSWORD="admin"
     # WireMock for @uses.compliance-mock scenarios (see docker-compose stack)
     export CAT_WIREMOCK_HOST="http://localhost:8089"
     ;;
@@ -75,6 +80,9 @@ case ${CAT_ENV} in
     export CAT_KEYCLOAK_SCOPE="openid"
     export CAT_TEST_USER="fc-ca-test"
     export CAT_TEST_PASSWORD="CHANGE_ME_dev_only1"
+    # Keycloak Admin REST API — see the docker-compose block above for what this is for.
+    export CAT_KEYCLOAK_ADMIN_USER="admin"
+    export CAT_KEYCLOAK_ADMIN_PASSWORD="admin"
     export CAT_WIREMOCK_HOST="http://localhost:8089"
     ;;
 
@@ -90,6 +98,10 @@ case ${CAT_ENV} in
     export CAT_KEYCLOAK_SCOPE="openid"
     export CAT_TEST_USER="qa-test-user"
     export CAT_TEST_PASSWORD="qa-test-password"
+    # Keycloak Admin REST API — set to real QA-realm admin credentials if the RBAC
+    # role-matrix scenarios (features/18 RBAC Role Matrix.feature) are run against this target.
+    export CAT_KEYCLOAK_ADMIN_USER="your-qa-admin-user-here"
+    export CAT_KEYCLOAK_ADMIN_PASSWORD="your-qa-admin-password-here"
     # Compliance mock for @uses.compliance-mock scenarios. If the mock runs in-cluster
     # (Helm complianceMock.enabled), port-forward it and point here at the local port:
     #   kubectl port-forward -n federated-catalogue svc/fc-compliance-mock 8089:8080
