@@ -793,6 +793,19 @@ def response_has_violations(context: ContextType, count: int) -> None:
         f"Expected >= {count} violations, got {len(violations)}: {violations}"
 
 
+@then('response report has a violation mentioning "{text}"')
+def response_violation_mentions(context: ContextType, text: str) -> None:
+    """Assert that some violation's message contains the given text."""
+    # Scans every violation, never violations[0] — the order in which a validation
+    # engine reports constraint failures is not part of the API contract.
+    body = context.requests_response.json()
+    report = body.get("report", {})
+    violations = report.get("violations", [])
+    messages = [v.get("message", "") for v in violations]
+    assert any(text in m for m in messages), \
+        f"Expected a violation mentioning {text!r}, got messages: {messages}"
+
+
 @then('response report contains raw SHACL report')
 def response_has_raw_report(context: ContextType) -> None:
     body = context.requests_response.json()

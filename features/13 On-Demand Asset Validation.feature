@@ -51,6 +51,10 @@ Feature: On-Demand Asset Validation
     # SRS 3.1.6 applicability: a JSON Schema is applicable to an RDF asset serialised in JSON-LD.
     # This is SRS 5 validation request 1 — combined SHACL + JSON Schema validation of one asset.
     # JSON-LD without LD-proof — only accepted when VC signature verification is off (default config).
+    # The SHACL leg here conforms vacuously: the credential declares no gax-core:Participant, so the
+    # shape matches zero focus nodes. The JSON Schema leg is substantive (the document carries both
+    # an array `type` and an `issuer`). The substantive SHACL-conforming case lives in the
+    # JSON-Schema-half-non-conforming scenario below.
     Given schema from fixture "schemas/participant-requires-legalname.shacl.ttl" is uploaded as "text/turtle"
     Then save schema id from last response as "shape_schema_id"
     Given schema from fixture "schemas/participant-jsonld.schema.json" is uploaded as "application/schema+json"
@@ -82,6 +86,34 @@ Feature: On-Demand Asset Validation
       And response does not conform to schema
       And response has at least 1 violation
       And response report contains raw SHACL report
+      And response has 2 validation result ids
+      And uploaded schemas are cleaned up
+
+  @cfg.default
+  Scenario: Validate JSON-LD RDF asset against SHACL shape and JSON Schema together — JSON Schema half non-conforming
+    # Mirror image of the scenario above, completing the 2x2 cross over the same two schemas: here the
+    # SHACL leg conforms substantively (the asset is typed gax-core:Participant AND carries
+    # schema:legalName, so the shape matches a real focus node and is satisfied) while the JSON Schema
+    # leg fails on the missing `issuer`. This is what proves the JSON Schema is evaluated against the
+    # document rather than merely registered: a server returning a hard-coded verdict for either leg
+    # fails at least one of the three combined scenarios.
+    # `issuer` is the discriminator precisely because it is undefined in this fixture's `@context`:
+    # JSON-LD expansion drops it, so it contributes no triple and is invisible to SHACL, while the
+    # JSON Schema leg reads the stored bytes and sees it missing. The two legs are therefore
+    # provably independent, not just differently configured.
+    # JSON-LD without LD-proof — only accepted when VC signature verification is off (default config).
+    Given schema from fixture "schemas/participant-requires-legalname.shacl.ttl" is uploaded as "text/turtle"
+    Then save schema id from last response as "shape_schema_id"
+    Given schema from fixture "schemas/participant-jsonld.schema.json" is uploaded as "application/schema+json"
+    Then save schema id from last response as "json_schema_id"
+    Given asset from fixture "invalid/rdf/participant-missing-issuer.jsonld" is not uploaded
+    When add asset from fixture "invalid/rdf/participant-missing-issuer.jsonld" with content-type "application/ld+json"
+    Then save asset id from last response
+    When validate saved asset against saved schemas
+    Then get http 200:Success code
+      And response does not conform to schema
+      And response has at least 1 violation
+      And response report has a violation mentioning "issuer"
       And response has 2 validation result ids
       And uploaded schemas are cleaned up
 

@@ -3,9 +3,10 @@
   "$id": "https://example.org/schemas/participant-requires-issuer",
   "title": "ParticipantJsonLdShape",
   "type": "object",
-  "required": ["@context", "type"],
+  "required": ["@context", "type", "issuer"],
   "properties": {
     "@context": {},
-    "type": { "type": "array" }
+    "type": { "type": "array" },
+    "issuer": { "type": "string" }
   }
 }

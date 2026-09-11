@@ -5,7 +5,7 @@
     "id": "@id",
     "type": "@type"
   },
-  "id": "https://example.com/test-participant-missing-legalname",
+  "id": "https://example.com/test-participant-missing-issuer",
   "type": ["gax-core:Participant"],
-  "issuer": "did:web:did-server"
+  "schema:legalName": "Example Participant Ltd."
 }
