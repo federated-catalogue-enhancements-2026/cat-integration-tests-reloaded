@@ -1,0 +1,11 @@
+{
+  "@context": {
+    "gax-core": "https://w3id.org/gaia-x/core#",
+    "schema": "http://schema.org/",
+    "id": "@id",
+    "type": "@type"
+  },
+  "id": "https://example.com/test-participant-missing-legalname",
+  "type": ["gax-core:Participant"],
+  "issuer": "did:web:did-server"
+}

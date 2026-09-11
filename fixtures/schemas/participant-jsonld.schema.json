@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/participant-requires-issuer",
+  "title": "ParticipantJsonLdShape",
+  "type": "object",
+  "required": ["@context", "type", "issuer"],
+  "properties": {
+    "@context": {},
+    "type": { "type": "array" },
+    "issuer": { "type": "string" }
+  }
+}

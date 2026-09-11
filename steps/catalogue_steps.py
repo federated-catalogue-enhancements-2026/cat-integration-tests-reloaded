@@ -754,6 +754,17 @@ def save_schema_id_from_last_response(context: ContextType) -> None:
     context.last_schema_id = schema_id
 
 
+@then('save schema id from last response as "{var_name}"')
+def save_schema_id_as_named(context: ContextType, var_name: str) -> None:
+    response_json = context.requests_response.json()
+    schema_id = response_json.get("id")
+    assert schema_id, f"Last response does not contain an 'id' field: {response_json}"
+    if not hasattr(context, "last_schema_ids"):
+        context.last_schema_ids = []
+    context.last_schema_ids.append(schema_id)
+    setattr(context, var_name, schema_id)
+
+
 @then('save asset id from last response as "{var_name}"')
 def save_asset_id_as_named(context: ContextType, var_name: str) -> None:
     response_json = context.requests_response.json()
@@ -779,6 +790,16 @@ def validate_saved_asset_against_schema(context: ContextType, schema_id: str) ->
     assert hasattr(context, "last_asset_id"), "No saved asset id"
     context.requests_response = context.fc_server.validate_asset(
         context.last_asset_id, schema_ids=[schema_id]
+    )
+
+
+@when('validate saved asset against saved schemas')
+def validate_saved_asset_against_saved_schemas(context: ContextType) -> None:
+    assert hasattr(context, "last_asset_id"), "No saved asset id"
+    assert hasattr(context, "last_schema_ids"), \
+        'No saved schema ids — use \'save schema id from last response as "var"\''
+    context.requests_response = context.fc_server.validate_asset(
+        context.last_asset_id, schema_ids=context.last_schema_ids
     )
 
 
@@ -849,6 +870,19 @@ def response_has_violations(context: ContextType, count: int) -> None:
         f"Expected >= {count} violations, got {len(violations)}: {violations}"
 
 
+@then('response report has a violation mentioning "{text}"')
+def response_violation_mentions(context: ContextType, text: str) -> None:
+    """Assert that some violation's message contains the given text."""
+    # Scans every violation, never violations[0] — the order in which a validation
+    # engine reports constraint failures is not part of the API contract.
+    body = context.requests_response.json()
+    report = body.get("report", {})
+    violations = report.get("violations", [])
+    messages = [v.get("message", "") for v in violations]
+    assert any(text in m for m in messages), \
+        f"Expected a violation mentioning {text!r}, got messages: {messages}"
+
+
 @then('response report contains raw SHACL report')
 def response_has_raw_report(context: ContextType) -> None:
     body = context.requests_response.json()
@@ -863,6 +897,14 @@ def response_has_validation_result_id(context: ContextType) -> None:
     result_ids = body.get("validationResultIds")
     assert result_ids, f"Expected validationResultIds in response, got: {body}"
     context.last_validation_result_id = result_ids[0]
+
+
+@then('response has {expected:d} validation result ids')
+def response_has_n_validation_result_ids(context: ContextType, expected: int) -> None:
+    body = context.requests_response.json()
+    result_ids = body.get("validationResultIds")
+    assert result_ids and len(result_ids) == expected, \
+        f"Expected {expected} validationResultIds, got: {result_ids} in {body}"
 
 
 @when('get validation result by saved id')

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Structural constraint for an RDF/XML batch of participants: at least two entries.
+  Deliberately unrelated to RDF semantics (SHACL) — this is plain XML Schema (XSD)
+  validation of the raw RDF/XML serialisation, reached only via an explicit schemaId
+  (SRS 3.1.6: an XML Schema is applicable to an RDF asset serialised in RDF/XML).
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+           targetNamespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+           elementFormDefault="qualified">
+  <xs:element name="RDF">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:any namespace="##any" processContents="skip" minOccurs="2" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
